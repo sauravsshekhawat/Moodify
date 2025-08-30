@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'MoodTunes AI - Discover Music That Matches Your Mood',
   description: 'AI-powered music discovery app that curates playlists based on your current mood and emotions.',
-  keywords: ['music', 'AI', 'mood', 'playlist', 'discovery', 'emotions', 'YouTube'],
+  keywords: ['music', 'AI', 'mood', 'playlist', 'discovery', 'emotions', 'Spotify'],
   authors: [{ name: 'MoodTunes AI Team' }],
   creator: 'MoodTunes AI',
   publisher: 'MoodTunes AI',

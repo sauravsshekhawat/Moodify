@@ -88,23 +88,6 @@ const Sidebar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Bottom Section */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-silver/20">
-        <div className="luxury-card rounded-xl p-4">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-luxgreen to-luxviolet flex items-center justify-center">
-              <span className="text-xs text-white font-bold">AI</span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-platinum">AI Status</p>
-              <p className="text-xs text-luxgreen">Online & Learning</p>
-            </div>
-          </div>
-          <div className="w-full bg-luxury-border rounded-full h-1">
-            <div className="bg-gradient-to-r from-luxgreen to-luxviolet h-1 rounded-full w-3/4 animate-pulse"></div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 };

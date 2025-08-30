@@ -1,5 +1,6 @@
 import YouTubeService from './youtube';
 import SoundCloudService from './soundcloud';
+import SpotifyService from './spotify';
 
 export type MusicProvider = 'youtube' | 'soundcloud' | 'spotify';
 
@@ -44,17 +45,19 @@ export interface SearchConfig {
 class UnifiedMusicService {
   private youtubeService: YouTubeService;
   private soundcloudService: SoundCloudService;
+  private spotifyService: SpotifyService;
   private defaultConfig: SearchConfig;
 
   constructor() {
     this.youtubeService = new YouTubeService();
     this.soundcloudService = new SoundCloudService();
+    this.spotifyService = new SpotifyService();
     
     this.defaultConfig = {
       providers: {
-        soundcloud: { enabled: true, priority: 1, timeout: 10000 }, // SoundCloud first (better audio quality)
-        youtube: { enabled: true, priority: 2, timeout: 15000 }, // YouTube second (larger catalog)
-        spotify: { enabled: false, priority: 3, timeout: 8000 }, // Spotify disabled for now (preview only)
+        spotify: { enabled: true, priority: 1, timeout: 8000 }, // Spotify first (best metadata)
+        youtube: { enabled: true, priority: 2, timeout: 15000 }, // YouTube second (largest catalog)
+        soundcloud: { enabled: false, priority: 3, timeout: 10000 }, // Disable SoundCloud for cleaner experience
       },
       maxResults: 10,
       fallbackEnabled: true,
@@ -92,6 +95,22 @@ class UnifiedMusicService {
     };
   }
 
+  private transformSpotifyTrack(track: any): UnifiedTrack {
+    return {
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      duration: track.duration,
+      thumbnail: track.thumbnail,
+      publishedAt: track.releaseDate,
+      popularity: track.popularity,
+      provider: 'spotify',
+      streamUrl: track.previewUrl, // 30-second preview
+      genre: track.genres?.[0],
+      permalink: track.spotifyUrl,
+    };
+  }
+
   private async searchProvider(
     provider: MusicProvider, 
     vibeInput: string, 
@@ -111,6 +130,9 @@ class UnifiedMusicService {
         case 'soundcloud':
           searchPromise = this.soundcloudService.searchMusic(vibeInput);
           break;
+        case 'spotify':
+          searchPromise = this.spotifyService.searchMusic(vibeInput);
+          break;
         default:
           throw new Error(`Unsupported provider: ${provider}`);
       }
@@ -127,6 +149,8 @@ class UnifiedMusicService {
           return result.tracks.map(this.transformYouTubeTrack);
         case 'soundcloud':
           return result.tracks.map(this.transformSoundCloudTrack);
+        case 'spotify':
+          return result.tracks.map(this.transformSpotifyTrack);
         default:
           return [];
       }
@@ -148,11 +172,14 @@ class UnifiedMusicService {
 
     // Provider preference scoring
     switch (track.provider) {
+      case 'spotify':
+        score += 8; // Prefer Spotify for best metadata and discovery
+        break;
       case 'soundcloud':
-        score += 5; // Prefer SoundCloud for audio quality
+        score += 5; // SoundCloud for audio quality and independent artists
         break;
       case 'youtube':
-        score += 3; // YouTube has good catalog but size issues
+        score += 3; // YouTube has good catalog but varying quality
         break;
       default:
         score += 1;
@@ -323,8 +350,8 @@ class UnifiedMusicService {
         configured: !!process.env.SOUNDCLOUD_CLIENT_ID,
       },
       spotify: {
-        available: false, // Not implemented yet
-        configured: !!process.env.SPOTIFY_CLIENT_ID,
+        available: true, // Now implemented
+        configured: this.spotifyService.isConfigured(),
       },
     };
   }
@@ -347,8 +374,8 @@ class UnifiedMusicService {
           timeout: 15000,
         },
         spotify: {
-          enabled: false, // Not ready yet
-          priority: 3,
+          enabled: true, // Now enabled with fallback
+          priority: 1, // Highest priority
           timeout: 8000,
         },
       },

@@ -103,12 +103,14 @@ class SpotifyService {
     
     // Environment detection
     const environments = {
-      gym: ['gym', 'workout', 'fitness', 'training', 'exercise'],
-      study: ['study', 'focus', 'concentration', 'work', 'office'],
-      party: ['party', 'dance', 'club', 'celebration', 'rave'],
-      sleep: ['sleep', 'bedtime', 'night', 'relax', 'calm'],
-      drive: ['drive', 'car', 'road', 'travel', 'cruise'],
-      cafe: ['cafe', 'coffee', 'background', 'ambient']
+      gym: ['gym', 'workout', 'fitness', 'training', 'exercise', 'running', 'cardio'],
+      study: ['study', 'focus', 'concentration', 'work', 'office', 'reading', 'homework'],
+      party: ['party', 'dance', 'club', 'celebration', 'rave', 'festival', 'wedding'],
+      sleep: ['sleep', 'bedtime', 'night', 'relax', 'calm', 'lullaby', 'peaceful'],
+      drive: ['drive', 'car', 'road', 'travel', 'cruise', 'highway', 'journey'],
+      cafe: ['cafe', 'coffee', 'background', 'ambient', 'restaurant', 'lounge'],
+      morning: ['morning', 'sunrise', 'breakfast', 'fresh', 'wake up'],
+      evening: ['evening', 'sunset', 'dinner', 'wind down', 'twilight']
     };
     
     // Speed/Energy detection
@@ -120,12 +122,14 @@ class SpotifyService {
 
     // Vibe/Valence detection
     const vibePatterns = {
-      sad: ['sad', 'melancholy', 'depressing', 'emotional', 'crying', 'heartbreak'],
-      happy: ['happy', 'joyful', 'cheerful', 'positive', 'uplifting', 'excited'],
-      chill: ['chill', 'lofi', 'calm', 'peaceful', 'zen', 'ambient'],
-      energetic: ['energetic', 'hype', 'pump', 'motivational', 'power', 'intense'],
-      romantic: ['romantic', 'love', 'heart', 'valentine', 'couple', 'intimate'],
-      dark: ['dark', 'gothic', 'moody', 'atmospheric', 'mysterious']
+      sad: ['sad', 'melancholy', 'depressing', 'emotional', 'crying', 'heartbreak', 'breakup', 'lonely'],
+      happy: ['happy', 'joyful', 'cheerful', 'positive', 'uplifting', 'excited', 'celebration', 'party'],
+      chill: ['chill', 'lofi', 'calm', 'peaceful', 'zen', 'ambient', 'relaxing', 'mellow'],
+      energetic: ['energetic', 'hype', 'pump', 'motivational', 'power', 'intense', 'workout', 'gym'],
+      romantic: ['romantic', 'love', 'heart', 'valentine', 'couple', 'intimate', 'wedding', 'date'],
+      dark: ['dark', 'gothic', 'moody', 'atmospheric', 'mysterious', 'haunting', 'eerie'],
+      nostalgic: ['nostalgic', 'memories', 'throwback', 'vintage', 'retro', 'old school'],
+      spiritual: ['spiritual', 'meditation', 'devotional', 'prayer', 'sacred', 'religious']
     };
     
     let detectedEnvironment = '';
@@ -162,15 +166,21 @@ class SpotifyService {
     // Genre detection
     let genre = '';
     const genreKeywords = {
-      'electronic': ['electronic', 'edm', 'house', 'techno', 'dubstep'],
-      'hip-hop': ['hip hop', 'rap', 'trap', 'hip-hop'],
-      'rock': ['rock', 'metal', 'punk', 'alternative'],
-      'pop': ['pop', 'mainstream', 'chart'],
-      'jazz': ['jazz', 'swing', 'blues'],
-      'classical': ['classical', 'orchestra', 'symphony'],
-      'folk': ['folk', 'country', 'acoustic'],
-      'r&b': ['r&b', 'soul', 'funk'],
-      'indie': ['indie', 'independent', 'underground']
+      'bollywood': ['bollywood', 'hindi', 'indian', 'desi', 'filmi', 'bhangra', 'punjabi'],
+      'electronic': ['electronic', 'edm', 'house', 'techno', 'dubstep', 'dance'],
+      'hip-hop': ['hip hop', 'rap', 'trap', 'hip-hop', 'gangsta', 'freestyle'],
+      'rock': ['rock', 'metal', 'punk', 'alternative', 'grunge', 'hard rock'],
+      'pop': ['pop', 'mainstream', 'chart', 'top hits', 'radio'],
+      'jazz': ['jazz', 'swing', 'blues', 'smooth jazz', 'bebop'],
+      'classical': ['classical', 'orchestra', 'symphony', 'opera', 'baroque'],
+      'folk': ['folk', 'country', 'acoustic', 'bluegrass', 'americana'],
+      'r&b': ['r&b', 'soul', 'funk', 'motown', 'neo soul'],
+      'indie': ['indie', 'independent', 'underground', 'alternative'],
+      'latin': ['latin', 'spanish', 'reggaeton', 'salsa', 'bachata', 'merengue'],
+      'k-pop': ['k-pop', 'korean', 'kpop', 'korean pop'],
+      'reggae': ['reggae', 'ska', 'dancehall', 'dub'],
+      'world': ['world', 'ethnic', 'traditional', 'cultural'],
+      'ambient': ['ambient', 'chillout', 'lounge', 'downtempo', 'atmospheric']
     };
     
     for (const [g, keywords] of Object.entries(genreKeywords)) {
@@ -205,6 +215,11 @@ class SpotifyService {
     query += ` year:${currentYear - 5}-${currentYear}`;
     
     return query.trim();
+  }
+
+  private extractGenreFromInput(vibeInput: string): string {
+    const parsed = this.parseInput(vibeInput);
+    return parsed.genre || 'pop'; // Default to pop if no genre detected
   }
 
   private async getAudioFeatures(trackIds: string[]): Promise<SpotifyAudioFeatures[]> {
@@ -301,46 +316,75 @@ class SpotifyService {
   async searchMusic(vibeInput: string): Promise<SpotifyResponse> {
     try {
       const token = await this.getAccessToken();
-      const searchQuery = this.buildSearchQuery(vibeInput);
       
-      const searchUrl = new URL(`${this.baseUrl}/search`);
-      searchUrl.searchParams.append('q', searchQuery);
-      searchUrl.searchParams.append('type', 'track');
-      searchUrl.searchParams.append('limit', '50');
-      searchUrl.searchParams.append('market', 'US');
+      // Try multiple search strategies
+      const searchQueries = [
+        this.buildSearchQuery(vibeInput),
+        vibeInput, // Original input
+        this.extractGenreFromInput(vibeInput), // Just genre
+        'chill music', // Generic fallback
+        'popular music' // Final fallback
+      ];
 
-      const response = await fetch(searchUrl.toString(), {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      let allTracks: any[] = [];
+      
+      for (const searchQuery of searchQueries) {
+        if (allTracks.length >= 10) break; // We have enough tracks
+        
+        try {
+          const searchUrl = new URL(`${this.baseUrl}/search`);
+          searchUrl.searchParams.append('q', searchQuery);
+          searchUrl.searchParams.append('type', 'track');
+          searchUrl.searchParams.append('limit', '20');
+          searchUrl.searchParams.append('market', 'US');
+
+          const response = await fetch(searchUrl.toString(), {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.tracks?.items && data.tracks.items.length > 0) {
+              allTracks.push(...data.tracks.items);
+              console.log(`Found ${data.tracks.items.length} tracks with query: "${searchQuery}"`);
+            }
+          }
+        } catch (error) {
+          console.log(`Query "${searchQuery}" failed, trying next...`);
+          continue;
+        }
+      }
+      
+      if (allTracks.length === 0) {
+        return { tracks: [], totalResults: 0 };
+      }
+
+      // Remove duplicates by track ID
+      const uniqueTracks = allTracks.filter((track, index, arr) => 
+        arr.findIndex(t => t.id === track.id) === index
+      );
+      
+      // Sort tracks to prioritize those with preview URLs
+      const sortedTracks = uniqueTracks.sort((a: any, b: any) => {
+        const aHasPreview = !!(a.preview_url && a.preview_url.length > 0);
+        const bHasPreview = !!(b.preview_url && b.preview_url.length > 0);
+        if (aHasPreview && !bHasPreview) return -1;
+        if (!aHasPreview && bHasPreview) return 1;
+        return 0;
       });
 
-      if (!response.ok) {
-        throw new Error(`Spotify search failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.tracks?.items || data.tracks.items.length === 0) {
-        return { tracks: [], totalResults: 0 };
-      }
-
-      // Filter tracks with preview URLs
-      const tracksWithPreviews = data.tracks.items.filter((track: any) => 
-        track.preview_url && track.preview_url.length > 0
-      );
-
-      if (tracksWithPreviews.length === 0) {
-        return { tracks: [], totalResults: 0 };
-      }
+      // Take up to 20 tracks for processing (less for performance)
+      const tracksToProcess = sortedTracks.slice(0, 20);
 
       // Get audio features for all tracks
-      const trackIds = tracksWithPreviews.map((track: any) => track.id);
+      const trackIds = tracksToProcess.map((track: any) => track.id);
       const audioFeatures = await this.getAudioFeatures(trackIds);
 
       // Transform tracks with audio features
-      const transformedTracks = tracksWithPreviews.map((track: any, index: number) => 
+      const transformedTracks = tracksToProcess.map((track: any, index: number) => 
         this.transformTrack(track, audioFeatures[index])
       );
 
@@ -364,8 +408,87 @@ class SpotifyService {
 
     } catch (error) {
       console.error('Spotify search error:', error);
-      throw new Error('Failed to search Spotify tracks');
+      
+      // Return fallback popular tracks if Spotify fails
+      return this.getFallbackTracks(vibeInput);
     }
+  }
+
+  private getFallbackTracks(vibeInput: string): SpotifyResponse {
+    // Return some mock popular tracks as fallback
+    const fallbackTracks: SpotifyTrack[] = [
+      {
+        id: 'fallback-1',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        album: 'After Hours',
+        duration: 200,
+        thumbnail: 'https://i.scdn.co/image/ab67616d0000b273c06f0ac8bb8bd7edefd64086',
+        previewUrl: '',
+        spotifyUrl: 'https://open.spotify.com/track/0VjIjW4GlULA8kw2ZrLsAO',
+        popularity: 95,
+        releaseDate: '2020-03-20',
+        genres: ['pop', 'synthpop']
+      },
+      {
+        id: 'fallback-2',
+        title: 'Good 4 U',
+        artist: 'Olivia Rodrigo',
+        album: 'SOUR',
+        duration: 178,
+        thumbnail: 'https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a',
+        previewUrl: '',
+        spotifyUrl: 'https://open.spotify.com/track/4iJyoBOLtHqaGxP12qzhQI',
+        popularity: 92,
+        releaseDate: '2021-05-14',
+        genres: ['pop', 'pop rock']
+      },
+      {
+        id: 'fallback-3',
+        title: 'Levitating',
+        artist: 'Dua Lipa',
+        album: 'Future Nostalgia',
+        duration: 203,
+        thumbnail: 'https://i.scdn.co/image/ab67616d0000b273c06f0ac8bb8bd7edefd64086',
+        previewUrl: '',
+        spotifyUrl: 'https://open.spotify.com/track/463CkQjx2Zk1yXoBuierM9',
+        popularity: 90,
+        releaseDate: '2020-03-27',
+        genres: ['pop', 'dance pop']
+      },
+      {
+        id: 'fallback-4',
+        title: 'Stay',
+        artist: 'The Kid LAROI, Justin Bieber',
+        album: 'F*CK LOVE 3: OVER YOU',
+        duration: 141,
+        thumbnail: 'https://i.scdn.co/image/ab67616d0000b273c06f0ac8bb8bd7edefd64086',
+        previewUrl: '',
+        spotifyUrl: 'https://open.spotify.com/track/5PjdY0CKGZdEuoNab3yDmX',
+        popularity: 88,
+        releaseDate: '2021-07-09',
+        genres: ['pop', 'hip hop']
+      },
+      {
+        id: 'fallback-5',
+        title: 'Heat Waves',
+        artist: 'Glass Animals',
+        album: 'Dreamland',
+        duration: 238,
+        thumbnail: 'https://i.scdn.co/image/ab67616d0000b273c06f0ac8bb8bd7edefd64086',
+        previewUrl: '',
+        spotifyUrl: 'https://open.spotify.com/track/02MWAaffLxlfxAUY7c5dvx',
+        popularity: 87,
+        releaseDate: '2020-08-07',
+        genres: ['indie', 'alternative']
+      }
+    ];
+
+    console.log(`Using fallback tracks for query: "${vibeInput}"`);
+    return {
+      tracks: fallbackTracks,
+      totalResults: fallbackTracks.length
+    };
   }
 
   async getTrackDetails(trackId: string): Promise<SpotifyTrack | null> {

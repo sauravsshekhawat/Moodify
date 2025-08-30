@@ -154,8 +154,8 @@ export default function Home() {
     setIsLoading(true);
     
     try {
-      // Search for music directly
-      const response = await fetch('/api/youtube/search', {
+      // Search for music using unified API (Spotify + YouTube)
+      const response = await fetch('/api/music/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
